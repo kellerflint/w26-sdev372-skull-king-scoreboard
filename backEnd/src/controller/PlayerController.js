@@ -41,5 +41,16 @@ export const createPlayer = async (req, res) => {
 export const deletePlayer = async (req, res) => {
   try {
     const { id } = req.body;
-  } catch (error) {}
+    if (!id) return res.status(401).json({ message: "Cannot find player" });
+
+    const player = await Player.findByPk(id);
+    if (!player) return res.status(401).json({ message: "Cannot find player" });
+
+    await player.update({ isActive: false });
+
+    return res.status(200).json({ message: "Player Deleted Successfully" });
+  } catch (error) {
+    console.error("Error deleting player:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
