@@ -54,3 +54,25 @@ export const deletePlayer = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+export const editPlayer = async (req, res) => {
+  try {
+    const { first_name, last_name } = req.body;
+    const { id } = req.params;
+
+    if (!id) return res.status(401).json({ message: "Cannot find player" });
+
+    if (!first_name || !last_name)
+      return res.status(400).json({ message: "Missing required fields" });
+
+    const player = await Player.findByPk(id);
+
+    await player.update({ first_name, last_name });
+
+    return res.status(200).json({ message: "Player Updated" });
+  } catch (error) {
+    console.error("Error updating player:", error);
+
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
