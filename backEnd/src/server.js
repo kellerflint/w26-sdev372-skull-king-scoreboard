@@ -8,7 +8,6 @@ import gameRouter from "./routes/GameRoutes.js";
 
 dotenv.config();
 const PORT = 3056;
-const HOST = "0.0.0.0";
 const app = express();
 app.use(express());
 app.use(cors());
@@ -19,6 +18,6 @@ await db.sequelize.sync();
 app.use("/", PlayerRouter);
 app.use("/", gameRouter);
 
-app.listen(PORT, HOST, () => {
-  console.log(`Server listening at ${HOST}:${PORT}`.bgYellow);
+app.listen(PORT, () => {
+  console.log(`Server listening at http://localhost:${PORT}`.bgYellow);
 });
