@@ -35,7 +35,7 @@ export const getPlayer = async (req, res) => {
     const playerStats = await Stats.findOne({
       where: { player_id: player.id },
     });
-    if (!playerStats) return res.status(404).json({ messaage: "Cannot find player stats"})
+    if (!playerStats) return res.status(404).json({ message: "Cannot find player stats"})
 
     return res.status(200).json({ player, playerStats });
   } catch (error) {

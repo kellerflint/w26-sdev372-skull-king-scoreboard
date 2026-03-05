@@ -6,7 +6,7 @@ import { usePlayers } from "../context/PlayersContext";
 
 function GameCreationForm() {
   const { players } = usePlayers();
-  const [formFields, setFormFields] = useState([{ playerId: "" }]);
+  const [formFields, setFormFields] = useState([{ playerId: "" }, { playerId: "" }]);
   const [playerCount, setPlayerCount] = useState(2);
   const [numRounds, setNumRounds] = useState(1);
   const navigate = useNavigate();
@@ -17,16 +17,18 @@ function GameCreationForm() {
     setFormFields(data);
   };
   const handleAddPlayer = () => {
-    setPlayerCount(playerCount + 1);
-    setFormFields([...formFields, { playerId: "" }]);
+      setPlayerCount(playerCount + 1);
+      setFormFields([...formFields, { playerId: "" }]);
   };
+
   const handleRoundChange = (e) => {
     setNumRounds(Number(e.target.value));
   };
 
-  const handleDeleteBtn = () => {
-    setPlayerCount(playerCount - 1);
-    formFields.pop();
+  const handleDeleteBtn = (index) => {
+      setPlayerCount(playerCount - 1);
+      const data = formFields.filter((_, i) => i !== index);
+      setFormFields(data);
   };
 
   const handleFormSubmit = async (e) => {
@@ -88,7 +90,7 @@ function GameCreationForm() {
               ))}
             </select>
             {index > 1 ? (
-              <FaRegTrashCan className="trash-icon" onClick={handleDeleteBtn} />
+              <FaRegTrashCan className="trash-icon" onClick={() => handleDeleteBtn(index)} />
             ) : (
               <></>
             )}
