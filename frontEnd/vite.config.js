@@ -10,4 +10,7 @@ export default defineConfig({
       '/game': 'http://localhost:3056',
     },
   },
+  test: {
+    environment: 'jsdom',
+  },
 })
