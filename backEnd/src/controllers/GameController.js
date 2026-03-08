@@ -29,7 +29,7 @@ export const createGame = async (req, res) => {
   } catch (error) {
     console.error("Error creating game:", error);
 
-    return res.status(500).json({ messcage: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
