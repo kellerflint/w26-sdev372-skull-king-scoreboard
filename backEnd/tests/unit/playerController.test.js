@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterAll, beforeEach } from 'vitest';
 import * as playerController from '../../src/controllers/PlayerController.js';
 import { players, stats, games, rounds, playerRounds, playerGames } from '../utils/mockData.js';
 import db from '../../src/models/index.js';
@@ -15,8 +15,11 @@ vi.mock('../../src/models/index.js', () => ({
 }));
 
 describe('Player Controller', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
 
-    afterEach(() => {
+    afterAll(() => {
         vi.restoreAllMocks();
     });
 
