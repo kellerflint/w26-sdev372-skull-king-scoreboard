@@ -1,82 +1,99 @@
-import { describe, it, expect, vi, afterEach, beforeEach, afterAll, beforeAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import * as gameController from '../../src/controllers/GameController.js';
-import { players, stats, games, rounds, playerRounds, playerGames } from '../utils/mockData.js';
+import { games, rounds, playerRounds } from '../utils/mockData.js';
 import db from '../../src/models/index.js';
 
-const { Game, PlayerGame, Round} = db;
+const { Game, PlayerGame, Round, PlayerRound } = db;
 
 vi.mock('../../src/models/index.js', () => ({
     default: {
-        Game: { create: vi.fn() },
+        Game: { create: vi.fn(), findOne: vi.fn() },
         PlayerGame: { create: vi.fn() },
-        Round: { create: vi.fn() },
+        Round: { create: vi.fn(), findOne: vi.fn() },
+        PlayerRound: { create: vi.fn(), findOne: vi.fn()}
     }
 }));
 
 describe('Game Controller', () => {
-    const mockDate = new Date('2024-01-01T00:00:00Z');
-
-    beforeAll(() => {
-        vi.useFakeTimers();
-        vi.setSystemTime(mockDate);
-    });
-    
-    afterAll(() => {
-        vi.useRealTimers();
-        vi.restoreAllMocks();
-    });
 
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
+    afterAll(() => {
+        vi.restoreAllMocks();
+    });
 
     describe('createGame', () => {
         it('should create a game and return 201', async () => {
-            const req = { body: { players: [1, 2], rounds_needed: 5 } }; 
-            const res = { status: vi.fn().mockReturnThis(), json: vi.fn(), };
+            const req = { body: { players: games[0].players, rounds_needed: games[0].rounds_needed } };
+            const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
 
-            const gameCreate = vi.spyOn(Game, 'create').mockResolvedValue({ 
-                 id: 1,
-                 date_played: mockDate,
-                 finished: false,
-                 rounds_needed: 5,
-                 players: [1, 2] });
-            const playerGameCreate = vi.spyOn(PlayerGame, 'create').mockResolvedValue({ id: 1});
-            const roundCreate = vi.spyOn(Round, 'create').mockResolvedValue({ id: 1, round_number: 1 });
+            const gameCreate = vi.spyOn(Game, 'create').mockResolvedValue(games[0]);
+            const playerGameCreate = vi.spyOn(PlayerGame, 'create').mockResolvedValue({ id: 1 });
+            const roundCreate = vi.spyOn(Round, 'create').mockResolvedValue(rounds[0]);
 
             await gameController.createGame(req, res);
 
-            expect(gameCreate).toHaveBeenCalledWith({ rounds_needed: 5, players: [1, 2] });
+            expect(gameCreate).toHaveBeenCalledWith({ rounds_needed: games[0].rounds_needed, players: games[0].players });
             expect(playerGameCreate).toHaveBeenCalledTimes(2);
-            expect(playerGameCreate).toHaveBeenNthCalledWith(1, { game_id: 1, player_id: 1 });
-            expect(playerGameCreate).toHaveBeenNthCalledWith(2, { game_id: 1, player_id: 2 });
-            expect(roundCreate).toHaveBeenCalledWith({ game_id: 1, round_number: 1 });
+            expect(playerGameCreate).toHaveBeenNthCalledWith(1, { game_id: games[0].id, player_id: 1 });
+            expect(playerGameCreate).toHaveBeenNthCalledWith(2, { game_id: games[0].id, player_id: 2 });
+            expect(roundCreate).toHaveBeenCalledWith({ game_id: games[0].id, round_number: 1 });
             expect(res.status).toHaveBeenCalledWith(201);
             expect(res.json).toHaveBeenCalledWith({
                 message: "Game Created",
-                round_info: { id: 1, round_number: 1 },
-                game_info: {
-                    id: 1,
-                    date_played: mockDate,
-                    finished: false,
-                    rounds_needed: 5,
-                    players: [1, 2],
-                },
+                round_info: rounds[0],
+                game_info: games[0],
             });
         });
-            
+
         it('should return 500 if there is an error', async () => {
-            const req = { body: { players: [1, 2], rounds_needed: 5 } };
-            const res = { status: vi.fn().mockReturnThis(), json: vi.fn(), };
+            const req = { body: { players: games[0].players, rounds_needed: games[0].rounds_needed } };
+            const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
 
             const gameCreate = vi.spyOn(Game, 'create').mockRejectedValue(new Error('DB Error'));
 
             await gameController.createGame(req, res);
 
-            expect(gameCreate).toHaveBeenCalledWith({ rounds_needed: 5, players: [1, 2] });
+            expect(gameCreate).toHaveBeenCalledWith({ rounds_needed: games[0].rounds_needed, players: games[0].players });
             expect(res.status).toHaveBeenCalledWith(500);
             expect(res.json).toHaveBeenCalledWith({ message: "Internal Server Error" });
+        });
+    });
+
+    describe("startNewRound", () => {
+        it("should create player rounds and return 201 when round_number is 1", async () => {
+            const req = {
+                params: { game_id: games[0].id, round_id: rounds[0].id },
+                body: {
+                    1: { bid: playerRounds[0].bid, tricks_won: playerRounds[0].tricks_won, bonus_points: playerRounds[0].bonus_points, round_score: playerRounds[0].round_score },
+                    2: { bid: playerRounds[1].bid, tricks_won: playerRounds[1].tricks_won, bonus_points: playerRounds[1].bonus_points, round_score: playerRounds[1].round_score },
+                }
+            };
+            const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+
+            vi.spyOn(Game, 'findOne').mockResolvedValue(games[0]);
+            vi.spyOn(Round, 'findOne').mockResolvedValue(rounds[0]);
+            const playerRoundCreate = vi.spyOn(PlayerRound, 'create')
+                .mockResolvedValueOnce(playerRounds[0])
+                .mockResolvedValueOnce(playerRounds[1]);
+            const roundCreate = vi.spyOn(Round, 'create').mockResolvedValue({ id: 203, round_number: 2, game_id: games[0].id });
+
+            await gameController.startNewRound(req, res);
+
+            expect(playerRoundCreate).toHaveBeenCalledTimes(2);
+            expect(playerRoundCreate).toHaveBeenNthCalledWith(1, { bid: playerRounds[0].bid, tricks_won: playerRounds[0].tricks_won, score: playerRounds[0].score, bonus_points: playerRounds[0].bonus_points, round_score: playerRounds[0].round_score, player_id: 1, round_id: rounds[0].id });
+            expect(playerRoundCreate).toHaveBeenNthCalledWith(2, { bid: playerRounds[1].bid, tricks_won: playerRounds[1].tricks_won, score: playerRounds[1].score, bonus_points: playerRounds[1].bonus_points, round_score: playerRounds[1].round_score, player_id: 2, round_id: rounds[0].id });
+            expect(roundCreate).toHaveBeenCalledWith({ game_id: games[0].id, round_number: 2 });
+            expect(res.status).toHaveBeenCalledWith(201);
+            expect(res.json).toHaveBeenCalledWith({
+                newRound: { id: 203, round_number: 2, game_id: games[0].id },
+                newPlayerRoundInfo: {
+                    1: playerRounds[0],
+                    2: playerRounds[1],
+                }
+            });
         });
     });
 });
